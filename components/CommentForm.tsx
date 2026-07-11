@@ -1,0 +1,82 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
+
+export default function CommentForm({ deckId }: { deckId: string }) {
+  const supabase = createClient();
+  const router = useRouter();
+
+  const [user, setUser] = useState<User | null>(null);
+  const [checking, setChecking] = useState(true);
+  const [body, setBody] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      setChecking(false);
+    });
+  }, [supabase]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || !body.trim()) return;
+
+    setSubmitting(true);
+    setError(null);
+
+    const { error } = await supabase.from("comments").insert({
+      deck_id: deckId,
+      user_id: user.id,
+      body: body.trim(),
+    });
+
+    setSubmitting(false);
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    setBody("");
+    router.refresh();
+  }
+
+  if (checking) return null;
+
+  if (!user) {
+    return (
+      <p className="text-sm text-muted mb-6">
+        <Link href="/login" className="text-rule hover:text-ink transition-colors focus-ring">
+          Log in
+        </Link>{" "}
+        to leave a comment.
+      </p>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mb-6">
+      <textarea
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        placeholder="Ask a question or say what helped you..."
+        rows={3}
+        className="w-full bg-card border-2 border-ink rounded-sm px-4 py-3 text-sm text-ink placeholder:text-muted focus-ring mb-2"
+      />
+      {error && <p className="text-xs text-margin mb-2">{error}</p>}
+      <button
+        type="submit"
+        disabled={submitting || !body.trim()}
+        className="bg-ink text-paper px-4 py-2 rounded-sm text-sm font-medium hover:bg-margin transition-colors focus-ring disabled:opacity-50"
+      >
+        {submitting ? "Posting..." : "Post comment"}
+      </button>
+    </form>
+  );
+}

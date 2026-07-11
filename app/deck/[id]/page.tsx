@@ -1,5 +1,7 @@
 import { decks as sampleDecks } from "@/lib/mockData";
 import RatingStars from "@/components/RatingStars";
+import RatingWidget from "@/components/RatingWidget";
+import CommentForm from "@/components/CommentForm";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 
@@ -62,6 +64,7 @@ export default async function DeckDetailPage({
   params: { id: string };
 }) {
   const sample = sampleDecks.find((d) => d.id === params.id);
+  const isSample = Boolean(sample);
 
   const deck: ViewDeck | null = sample
     ? {
@@ -147,28 +150,25 @@ export default async function DeckDetailPage({
         <h2 className="font-display font-bold text-ink text-sm uppercase tracking-wide mb-4">
           Rate this deck
         </h2>
-        <div className="flex gap-1 text-2xl mb-8" aria-label="Rate this deck">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button key={n} className="text-muted/30 hover:text-margin transition-colors focus-ring" aria-label={`${n} star`}>
-              ★
-            </button>
-          ))}
-        </div>
+        {isSample ? (
+          <p className="text-sm text-muted mb-8">
+            This is a sample deck — rating is disabled for demo content.
+          </p>
+        ) : (
+          <RatingWidget deckId={deck.id} />
+        )}
 
         <h2 className="font-display font-bold text-ink text-sm uppercase tracking-wide mb-4">
           Comments ({deck.comments.length})
         </h2>
 
-        <form className="mb-6">
-          <textarea
-            placeholder="Ask a question or say what helped you..."
-            rows={3}
-            className="w-full bg-card border-2 border-ink rounded-sm px-4 py-3 text-sm text-ink placeholder:text-muted focus-ring mb-2"
-          />
-          <button className="bg-ink text-paper px-4 py-2 rounded-sm text-sm font-medium hover:bg-margin transition-colors focus-ring">
-            Post comment
-          </button>
-        </form>
+        {isSample ? (
+          <p className="text-sm text-muted mb-6">
+            This is a sample deck — commenting is disabled for demo content.
+          </p>
+        ) : (
+          <CommentForm deckId={deck.id} />
+        )}
 
         <div className="space-y-4">
           {deck.comments.map((comment) => (
