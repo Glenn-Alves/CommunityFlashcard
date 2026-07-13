@@ -1,3 +1,4 @@
+import Link from "next/link";
 import DeckCard, { type DeckSummary } from "@/components/DeckCard";
 import { decks as sampleDecks } from "@/lib/mockData";
 import { createClient } from "@/lib/supabase/server";
@@ -37,7 +38,14 @@ async function getRealDecks(): Promise<DeckSummary[]> {
   });
 }
 
-export default async function BrowsePage() {
+export default async function BrowsePage({
+  searchParams,
+}: {
+  searchParams: { q?: string; tag?: string };
+}) {
+  const q = (searchParams.q ?? "").trim().toLowerCase();
+  const activeTag = searchParams.tag ?? "";
+
   const realDecks = await getRealDecks();
 
   const sampleAsSummaries: DeckSummary[] = sampleDecks.map((d) => ({
@@ -53,6 +61,24 @@ export default async function BrowsePage() {
 
   const allDecks = [...realDecks, ...sampleAsSummaries];
   const allTags = Array.from(new Set(allDecks.flatMap((d) => d.tags))).sort();
+
+  const filteredDecks = allDecks.filter((deck) => {
+    const matchesTag = activeTag ? deck.tags.includes(activeTag) : true;
+    const matchesQuery = q
+      ? deck.title.toLowerCase().includes(q) ||
+        deck.description.toLowerCase().includes(q) ||
+        deck.tags.some((t) => t.toLowerCase().includes(q))
+      : true;
+    return matchesTag && matchesQuery;
+  });
+
+  function tagHref(tag: string) {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (tag) params.set("tag", tag);
+    const qs = params.toString();
+    return qs ? `/?${qs}` : "/";
+  }
 
   return (
     <div>
@@ -70,8 +96,11 @@ export default async function BrowsePage() {
         </p>
 
         <form className="flex gap-2 max-w-xl" role="search">
+          {activeTag && <input type="hidden" name="tag" value={activeTag} />}
           <input
             type="search"
+            name="q"
+            defaultValue={q}
             placeholder="Search decks — try &ldquo;organic chemistry&rdquo;"
             className="flex-1 bg-card border-2 border-ink rounded-sm px-4 py-3 text-sm text-ink placeholder:text-muted focus-ring"
           />
@@ -86,25 +115,47 @@ export default async function BrowsePage() {
 
       {/* Tag filter row */}
       <div className="flex flex-wrap gap-2 mb-8">
-        <button className="text-xs bg-ink text-paper rounded-full px-3 py-1.5 focus-ring">
+        <Link
+          href={tagHref("")}
+          className={`text-xs rounded-full px-3 py-1.5 focus-ring transition-colors ${
+            !activeTag
+              ? "bg-ink text-paper"
+              : "text-muted border border-ink/15 hover:border-rule hover:text-ink"
+          }`}
+        >
           All decks
-        </button>
+        </Link>
         {allTags.map((tag) => (
-          <button
+          <Link
             key={tag}
-            className="text-xs text-muted border border-ink/15 rounded-full px-3 py-1.5 hover:border-rule hover:text-ink transition-colors focus-ring"
+            href={tagHref(tag)}
+            className={`text-xs rounded-full px-3 py-1.5 focus-ring transition-colors ${
+              activeTag === tag
+                ? "bg-ink text-paper"
+                : "text-muted border border-ink/15 hover:border-rule hover:text-ink"
+            }`}
           >
             {tag}
-          </button>
+          </Link>
         ))}
       </div>
 
       {/* Deck grid */}
-      <section aria-label="Decks" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {allDecks.map((deck) => (
-          <DeckCard key={deck.id} deck={deck} />
-        ))}
-      </section>
+      {filteredDecks.length > 0 ? (
+        <section aria-label="Decks" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredDecks.map((deck) => (
+            <DeckCard key={deck.id} deck={deck} />
+          ))}
+        </section>
+      ) : (
+        <p className="text-sm text-muted">
+          No decks match{q ? ` "${q}"` : ""}{activeTag ? ` in "${activeTag}"` : ""}. Try a different search or{" "}
+          <Link href="/" className="text-rule hover:text-ink transition-colors focus-ring">
+            clear filters
+          </Link>
+          .
+        </p>
+      )}
     </div>
   );
 }
