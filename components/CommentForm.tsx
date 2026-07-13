@@ -6,6 +6,12 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
+const WORD_LIMIT = 150;
+
+function countWords(text: string) {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
 export default function CommentForm({ deckId }: { deckId: string }) {
   const supabase = createClient();
   const router = useRouter();
@@ -23,9 +29,12 @@ export default function CommentForm({ deckId }: { deckId: string }) {
     });
   }, [supabase]);
 
+  const wordCount = countWords(body);
+  const overLimit = wordCount > WORD_LIMIT;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!user || !body.trim()) return;
+    if (!user || !body.trim() || overLimit) return;
 
     setSubmitting(true);
     setError(null);
@@ -67,12 +76,16 @@ export default function CommentForm({ deckId }: { deckId: string }) {
         onChange={(e) => setBody(e.target.value)}
         placeholder="Ask a question or say what helped you..."
         rows={3}
-        className="w-full bg-card border-2 border-ink rounded-sm px-4 py-3 text-sm text-ink placeholder:text-muted focus-ring mb-2"
+        className="w-full bg-card border-2 border-ink rounded-sm px-4 py-3 text-sm text-ink placeholder:text-muted focus-ring mb-1"
       />
+      <p className={`text-xs mb-2 ${overLimit ? "text-margin" : "text-muted"}`}>
+        {wordCount}/{WORD_LIMIT} words
+        {overLimit && " — please shorten your comment"}
+      </p>
       {error && <p className="text-xs text-margin mb-2">{error}</p>}
       <button
         type="submit"
-        disabled={submitting || !body.trim()}
+        disabled={submitting || !body.trim() || overLimit}
         className="bg-ink text-paper px-4 py-2 rounded-sm text-sm font-medium hover:bg-margin transition-colors focus-ring disabled:opacity-50"
       >
         {submitting ? "Posting..." : "Post comment"}

@@ -2,6 +2,7 @@ import { decks as sampleDecks } from "@/lib/mockData";
 import RatingStars from "@/components/RatingStars";
 import RatingWidget from "@/components/RatingWidget";
 import CommentForm from "@/components/CommentForm";
+import CommentItem from "@/components/CommentItem";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 
@@ -15,7 +16,7 @@ type ViewDeck = {
   ratingCount: number;
   cardCount: number;
   cards: { id: string; front: string; back: string }[];
-  comments: { id: string; author: string; body: string }[];
+  comments: { id: string; author: string; body: string; userId: string | null }[];
 };
 
 async function getRealDeck(id: string): Promise<ViewDeck | null> {
@@ -24,7 +25,7 @@ async function getRealDeck(id: string): Promise<ViewDeck | null> {
   const { data: deck, error } = await supabase
     .from("decks")
     .select(
-      "id, title, description, tags, profiles(username), cards(id, front_text, back_text), ratings(score), comments(id, body, profiles(username))"
+      "id, title, description, tags, profiles(username), cards(id, front_text, back_text), ratings(score), comments(id, body, created_at, user_id, profiles(username))"
     )
     .eq("id", id)
     .single();
@@ -35,6 +36,11 @@ async function getRealDeck(id: string): Promise<ViewDeck | null> {
   const avgRating = scores.length
     ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length
     : 0;
+
+  const sortedComments = [...(deck.comments ?? [])].sort(
+    (a: any, b: any) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
 
   return {
     id: deck.id,
@@ -50,10 +56,11 @@ async function getRealDeck(id: string): Promise<ViewDeck | null> {
       front: c.front_text,
       back: c.back_text,
     })),
-    comments: (deck.comments ?? []).map((c: any) => ({
+    comments: sortedComments.map((c: any) => ({
       id: c.id,
       author: c.profiles?.username ?? "a deckbox user",
       body: c.body,
+      userId: c.user_id ?? null,
     })),
   };
 }
@@ -65,6 +72,10 @@ export default async function DeckDetailPage({
 }) {
   const sample = sampleDecks.find((d) => d.id === params.id);
   const isSample = Boolean(sample);
+
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  const currentUserId = userData.user?.id ?? null;
 
   const deck: ViewDeck | null = sample
     ? {
@@ -85,6 +96,7 @@ export default async function DeckDetailPage({
           id: c.id,
           author: c.author,
           body: c.body,
+          userId: null,
         })),
       }
     : await getRealDeck(params.id);
@@ -172,12 +184,11 @@ export default async function DeckDetailPage({
 
         <div className="space-y-4">
           {deck.comments.map((comment) => (
-            <div key={comment.id} className="border-b border-ink/10 pb-4">
-              <p className="font-display text-xs text-ink font-bold mb-1">
-                {comment.author}
-              </p>
-              <p className="text-sm text-muted">{comment.body}</p>
-            </div>
+            <CommentItem
+              key={comment.id}
+              comment={comment}
+              currentUserId={currentUserId}
+            />
           ))}
           {deck.comments.length === 0 && (
             <p className="text-sm text-muted">No comments yet — be the first to say something.</p>
