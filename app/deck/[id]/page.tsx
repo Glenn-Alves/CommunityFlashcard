@@ -3,6 +3,7 @@ import RatingStars from "@/components/RatingStars";
 import RatingWidget from "@/components/RatingWidget";
 import CommentForm from "@/components/CommentForm";
 import CommentItem from "@/components/CommentItem";
+import SaveButton from "@/components/SaveButton";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 
@@ -15,6 +16,7 @@ type ViewDeck = {
   rating: number;
   ratingCount: number;
   cardCount: number;
+  ownerId: string | null;
   cards: { id: string; front: string; back: string }[];
   comments: { id: string; author: string; body: string; userId: string | null }[];
 };
@@ -25,7 +27,7 @@ async function getRealDeck(id: string): Promise<ViewDeck | null> {
   const { data: deck, error } = await supabase
     .from("decks")
     .select(
-      "id, title, description, tags, profiles(username), cards(id, front_text, back_text), ratings(score), comments(id, body, created_at, user_id, profiles(username))"
+      "id, title, description, tags, owner_id, profiles(username), cards(id, front_text, back_text), ratings(score), comments(id, body, created_at, user_id, profiles(username))"
     )
     .eq("id", id)
     .single();
@@ -51,6 +53,7 @@ async function getRealDeck(id: string): Promise<ViewDeck | null> {
     rating: avgRating,
     ratingCount: scores.length,
     cardCount: deck.cards?.length ?? 0,
+    ownerId: (deck as any).owner_id ?? null,
     cards: (deck.cards ?? []).map((c: any) => ({
       id: c.id,
       front: c.front_text,
@@ -87,6 +90,7 @@ export default async function DeckDetailPage({
         rating: sample.rating,
         ratingCount: sample.ratingCount,
         cardCount: sample.cardCount,
+        ownerId: null,
         cards: sample.cards.map((c) => ({
           id: c.id,
           front: c.front,
@@ -136,6 +140,7 @@ export default async function DeckDetailPage({
           <button className="border border-ink/20 text-ink px-5 py-2.5 rounded-sm text-sm font-medium hover:border-ink transition-colors focus-ring">
             Export as CSV
           </button>
+          {!isSample && <SaveButton deckId={deck.id} />}
         </div>
       </div>
 
@@ -159,15 +164,22 @@ export default async function DeckDetailPage({
 
       {/* Rate + comment */}
       <section className="mb-10">
-        <h2 className="font-display font-bold text-ink text-sm uppercase tracking-wide mb-4">
-          Rate this deck
-        </h2>
         {isSample ? (
-          <p className="text-sm text-muted mb-8">
-            This is a sample deck — rating is disabled for demo content.
-          </p>
-        ) : (
-          <RatingWidget deckId={deck.id} />
+          <>
+            <h2 className="font-display font-bold text-ink text-sm uppercase tracking-wide mb-4">
+              Rate this deck
+            </h2>
+            <p className="text-sm text-muted mb-8">
+              This is a sample deck — rating is disabled for demo content.
+            </p>
+          </>
+        ) : currentUserId && currentUserId === deck.ownerId ? null : (
+          <>
+            <h2 className="font-display font-bold text-ink text-sm uppercase tracking-wide mb-4">
+              Rate this deck
+            </h2>
+            <RatingWidget deckId={deck.id} />
+          </>
         )}
 
         <h2 className="font-display font-bold text-ink text-sm uppercase tracking-wide mb-4">

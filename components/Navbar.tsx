@@ -24,6 +24,11 @@ export default async function Navbar() {
           <Link href="/create" className="hover:text-ink transition-colors focus-ring">
             New deck
           </Link>
+          {user && (
+            <Link href="/saved" className="hover:text-ink transition-colors focus-ring">
+              Saved
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-3">
