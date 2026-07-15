@@ -147,9 +147,14 @@ export default async function DeckDetailPage({
           >
             Study this deck
           </Link>
-          <button className="border border-ink/20 text-ink px-5 py-2.5 rounded-sm text-sm font-medium hover:border-ink transition-colors focus-ring">
-            Export as CSV
-          </button>
+          {!isSample && (
+  
+    <a href={`/api/anki/export/${deck.id}`}
+    className="border border-ink/20 text-ink px-5 py-2.5 rounded-sm text-sm font-medium hover:border-ink transition-colors focus-ring"
+>
+    Export to Anki
+  </a>
+)}
           {!isSample && <SaveButton deckId={deck.id} />}
         </div>
       </div>

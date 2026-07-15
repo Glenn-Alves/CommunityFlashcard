@@ -23,6 +23,47 @@ export default function CreateDeckPage() {
   const [error, setError] = useState<string | null>(null);
   const [publishedDeckId, setPublishedDeckId] = useState<string | null>(null);
 
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    setImportError(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/anki/import", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setImportError(data.error ?? "Could not import that file.");
+      } else {
+        setCards(
+          data.cards.map((c: { front: string; back: string }) => ({
+            front: c.front,
+            back: c.back,
+          }))
+        );
+        if (!title.trim()) {
+          setTitle(file.name.replace(/\.apkg$/i, ""));
+        }
+      }
+    } catch {
+      setImportError("Could not import that file.");
+    }
+
+    setImporting(false);
+    e.target.value = "";
+  }
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
@@ -214,13 +255,37 @@ export default function CreateDeckPage() {
             placeholder="biology, ap-bio, exam-prep"
             className="w-full bg-card border-2 border-ink rounded-sm px-4 py-3 text-sm text-ink placeholder:text-muted focus-ring"
           />
-          <p className="text-xs text-muted mt-1.5">Separate tags with commas.</p>
+         <p className="text-xs text-muted mt-1.5">Separate tags with commas.</p>
+        </div>
+
+        <div className="border-2 border-dashed border-ink/25 rounded-sm p-6 text-center">
+          <p className="text-sm text-ink font-medium mb-1">
+            Import cards from Anki
+          </p>
+          <p className="text-xs text-muted mb-4">
+            Upload a .apkg file exported from Anki. This replaces the cards
+            below with the ones from that file.
+          </p>
+          <input
+            type="file"
+            accept=".apkg"
+            onChange={handleImportFile}
+            disabled={importing}
+            className="text-sm text-ink mx-auto"
+          />
+          {importing && (
+            <p className="text-xs text-muted mt-2">Reading file...</p>
+          )}
+          {importError && (
+            <p className="text-xs text-margin mt-2">{importError}</p>
+          )}
         </div>
 
         <div>
           <label className="block font-display text-xs text-ink uppercase tracking-wide mb-2">
             Cards
           </label>
+          
           <div className="space-y-3">
             {cards.map((card, i) => (
 <div
