@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import ExpandableField from "@/components/ExpandableField";
 import type { User } from "@supabase/supabase-js";
 
 type CardInput = { front: string; back: string };
@@ -190,16 +191,15 @@ export default function CreateDeckPage() {
           />
         </div>
 
-        <div>
+ <div>
           <label className="block font-display text-xs text-ink uppercase tracking-wide mb-2">
             Description
           </label>
-          <textarea
-            rows={3}
+          <ExpandableField
+            label="Description"
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={setDescription}
             placeholder="What's in this deck and who is it for?"
-            className="w-full bg-card border-2 border-ink rounded-sm px-4 py-3 text-sm text-ink placeholder:text-muted focus-ring"
           />
         </div>
 
@@ -223,23 +223,23 @@ export default function CreateDeckPage() {
           </label>
           <div className="space-y-3">
             {cards.map((card, i) => (
-              <div
+<div
                 key={i}
-                className="ruled margin-rule bg-card border border-ink/10 rounded-sm p-4 pl-11 grid grid-cols-1 md:grid-cols-2 gap-4 relative"
+                className="bg-card border border-ink/10 rounded-sm p-4 grid grid-cols-1 md:grid-cols-2 gap-4 relative"
               >
-                <input
-                  type="text"
+                <ExpandableField
+                  label="Front"
                   value={card.front}
-                  onChange={(e) => updateCard(i, "front", e.target.value)}
+                  onChange={(v) => updateCard(i, "front", v)}
                   placeholder="Front"
-                  className="bg-transparent text-sm text-ink placeholder:text-muted focus-ring rounded-sm"
+                  compact
                 />
-                <input
-                  type="text"
+                <ExpandableField
+                  label="Back"
                   value={card.back}
-                  onChange={(e) => updateCard(i, "back", e.target.value)}
+                  onChange={(v) => updateCard(i, "back", v)}
                   placeholder="Back"
-                  className="bg-transparent text-sm text-ink placeholder:text-muted focus-ring rounded-sm"
+                  compact
                 />
                 {cards.length > 1 && (
                   <button

@@ -1,9 +1,12 @@
 import { decks as sampleDecks } from "@/lib/mockData";
+import Link from "next/link";
 import RatingStars from "@/components/RatingStars";
 import RatingWidget from "@/components/RatingWidget";
 import CommentForm from "@/components/CommentForm";
 import CommentItem from "@/components/CommentItem";
 import SaveButton from "@/components/SaveButton";
+import CardManager from "@/components/CardManager";
+import DeckHeaderEdit from "@/components/DeckHeaderEdit";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 
@@ -107,6 +110,8 @@ export default async function DeckDetailPage({
 
   if (!deck) return notFound();
 
+  const isOwner = !isSample && currentUserId !== null && currentUserId === deck.ownerId;
+
   return (
     <div className="pt-12">
       {/* Header */}
@@ -114,10 +119,12 @@ export default async function DeckDetailPage({
         <p className="font-display text-xs text-muted uppercase tracking-wide mb-3">
           {deck.cardCount} cards · by {deck.author}
         </p>
-        <h1 className="font-display font-bold text-ink text-2xl md:text-3xl mb-3">
-          {deck.title}
-        </h1>
-        <p className="text-muted max-w-2xl mb-5">{deck.description}</p>
+       <DeckHeaderEdit
+          deckId={deck.id}
+          initialTitle={deck.title}
+          initialDescription={deck.description}
+          isOwner={isOwner}
+        />
 
         <div className="flex flex-wrap items-center gap-4 mb-5">
           <RatingStars rating={deck.rating} count={deck.ratingCount} />
@@ -133,10 +140,13 @@ export default async function DeckDetailPage({
           </div>
         </div>
 
-        <div className="flex gap-3">
-          <button className="bg-ink text-paper px-5 py-2.5 rounded-sm text-sm font-medium hover:bg-margin transition-colors focus-ring">
+     <div className="flex gap-3">
+          <Link
+            href={`/deck/${deck.id}/study`}
+            className="bg-ink text-paper px-5 py-2.5 rounded-sm text-sm font-medium hover:bg-margin transition-colors focus-ring"
+          >
             Study this deck
-          </button>
+          </Link>
           <button className="border border-ink/20 text-ink px-5 py-2.5 rounded-sm text-sm font-medium hover:border-ink transition-colors focus-ring">
             Export as CSV
           </button>
@@ -144,22 +154,27 @@ export default async function DeckDetailPage({
         </div>
       </div>
 
-      {/* Card preview list */}
+ 
+{/* Card preview list */}
       <section className="mb-12">
         <h2 className="font-display font-bold text-ink text-sm uppercase tracking-wide mb-4">
-          Preview
+          {isOwner ? "Manage cards" : "Preview"}
         </h2>
-        <div className="space-y-3">
-          {deck.cards.map((card) => (
-            <div
-              key={card.id}
-              className="ruled margin-rule bg-card border border-ink/10 rounded-sm p-4 pl-11 grid grid-cols-1 md:grid-cols-2 gap-4"
-            >
-              <p className="text-sm text-ink font-medium">{card.front}</p>
-              <p className="text-sm text-muted">{card.back}</p>
-            </div>
-          ))}
-        </div>
+        {isOwner ? (
+          <CardManager deckId={deck.id} initialCards={deck.cards} />
+        ) : (
+          <div className="space-y-3">
+            {deck.cards.map((card) => (
+              <div
+                key={card.id}
+                className="ruled margin-rule bg-card border border-ink/10 rounded-sm p-4 pl-11 grid grid-cols-1 md:grid-cols-2 gap-4"
+              >
+                <p className="text-sm text-ink font-medium">{card.front}</p>
+                <p className="text-sm text-muted">{card.back}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Rate + comment */}
