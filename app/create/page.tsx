@@ -1,18 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import ExpandableField from "@/components/ExpandableField";
-import type { User } from "@supabase/supabase-js";
+import AnkiImportGuide from "@/components/AnkiImportGuide";
+import { useAuth } from "@/components/AuthProvider";
 
 type CardInput = { front: string; back: string };
 
 export default function CreateDeckPage() {
   const supabase = createClient();
-
-  const [user, setUser] = useState<User | null>(null);
-  const [checkingAuth, setCheckingAuth] = useState(true);
+  const router = useRouter();
+  const { user, loading: checkingAuth } = useAuth();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -45,6 +46,9 @@ export default function CreateDeckPage() {
 
       if (!res.ok) {
         setImportError(data.error ?? "Could not import that file.");
+      } else if (data.mode === "created") {
+        router.push(`/deck/${data.rootDeckId}`);
+        return;
       } else {
         setCards(
           data.cards.map((c: { front: string; back: string }) => ({
@@ -64,12 +68,7 @@ export default function CreateDeckPage() {
     e.target.value = "";
   }
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-      setCheckingAuth(false);
-    });
-  }, [supabase]);
+ 
 
   function updateCard(index: number, field: "front" | "back", value: string) {
     setCards((prev) =>
@@ -186,9 +185,7 @@ export default function CreateDeckPage() {
           Deck saved
         </h1>
         <p className="text-muted text-sm mb-2">
-          Your deck is now stored in the database. The browse page still
-          shows sample decks for now — that's the next thing to wire up so
-          real decks show there too.
+          Your deck is now stored in the database.
         </p>
         <p className="text-xs text-muted mb-6">
           Deck ID: <code className="text-ink">{publishedDeckId}</code>
@@ -232,7 +229,7 @@ export default function CreateDeckPage() {
           />
         </div>
 
- <div>
+        <div>
           <label className="block font-display text-xs text-ink uppercase tracking-wide mb-2">
             Description
           </label>
@@ -255,7 +252,7 @@ export default function CreateDeckPage() {
             placeholder="biology, ap-bio, exam-prep"
             className="w-full bg-card border-2 border-ink rounded-sm px-4 py-3 text-sm text-ink placeholder:text-muted focus-ring"
           />
-         <p className="text-xs text-muted mt-1.5">Separate tags with commas.</p>
+          <p className="text-xs text-muted mt-1.5">Separate tags with commas.</p>
         </div>
 
         <div className="border-2 border-dashed border-ink/25 rounded-sm p-6 text-center">
@@ -263,8 +260,9 @@ export default function CreateDeckPage() {
             Import cards from Anki
           </p>
           <p className="text-xs text-muted mb-4">
-            Upload a .apkg file exported from Anki. This replaces the cards
-            below with the ones from that file.
+            Upload a .apkg file exported from Anki. A simple deck fills in
+            the cards below to review before publishing. A deck with
+            subsections gets created and organized automatically.
           </p>
           <input
             type="file"
@@ -285,10 +283,9 @@ export default function CreateDeckPage() {
           <label className="block font-display text-xs text-ink uppercase tracking-wide mb-2">
             Cards
           </label>
-          
           <div className="space-y-3">
             {cards.map((card, i) => (
-<div
+              <div
                 key={i}
                 className="bg-card border border-ink/10 rounded-sm p-4 grid grid-cols-1 md:grid-cols-2 gap-4 relative"
               >

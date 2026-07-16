@@ -4,36 +4,37 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function SaveButton({ deckId }: { deckId: string }) {
   const supabase = createClient();
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
 
-  const [user, setUser] = useState<User | null>(null);
-  const [checking, setChecking] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [checkingSaved, setCheckingSaved] = useState(true);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    async function init() {
-      const { data: userData } = await supabase.auth.getUser();
-      setUser(userData.user);
+    if (authLoading) return;
 
-      if (userData.user) {
-        const { data } = await supabase
-          .from("saved_decks")
-          .select("id")
-          .eq("user_id", userData.user.id)
-          .eq("deck_id", deckId)
-          .maybeSingle();
-        setSaved(Boolean(data));
-      }
-
-      setChecking(false);
+    if (!user) {
+      setCheckingSaved(false);
+      return;
     }
-    init();
-  }, [supabase, deckId]);
+
+    setCheckingSaved(true);
+    supabase
+      .from("saved_decks")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("deck_id", deckId)
+      .maybeSingle()
+      .then(({ data }) => {
+        setSaved(Boolean(data));
+        setCheckingSaved(false);
+      });
+  }, [supabase, deckId, user, authLoading]);
 
   async function toggleSave() {
     if (!user) return;
@@ -57,7 +58,7 @@ export default function SaveButton({ deckId }: { deckId: string }) {
     router.refresh();
   }
 
-  if (checking) return null;
+  if (authLoading || checkingSaved) return null;
 
   if (!user) {
     return (

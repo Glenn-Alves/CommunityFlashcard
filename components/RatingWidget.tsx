@@ -1,27 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function RatingWidget({ deckId }: { deckId: string }) {
   const supabase = createClient();
   const router = useRouter();
+  const { user, loading: checking } = useAuth();
 
-  const [user, setUser] = useState<User | null>(null);
-  const [checking, setChecking] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [myScore, setMyScore] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-      setChecking(false);
-    });
-  }, [supabase]);
 
   async function handleRate(score: number) {
     if (!user) return;

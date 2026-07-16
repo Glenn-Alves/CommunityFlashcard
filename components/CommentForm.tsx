@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
+import { useAuth } from "@/components/AuthProvider";
 
 const WORD_LIMIT = 150;
 
@@ -15,19 +15,11 @@ function countWords(text: string) {
 export default function CommentForm({ deckId }: { deckId: string }) {
   const supabase = createClient();
   const router = useRouter();
+  const { user, loading: checking } = useAuth();
 
-  const [user, setUser] = useState<User | null>(null);
-  const [checking, setChecking] = useState(true);
   const [body, setBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-      setChecking(false);
-    });
-  }, [supabase]);
 
   const wordCount = countWords(body);
   const overLimit = wordCount > WORD_LIMIT;

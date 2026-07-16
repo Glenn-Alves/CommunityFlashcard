@@ -12,6 +12,7 @@ async function getRealDecks(): Promise<DeckSummary[]> {
       "id, title, description, tags, created_at, cards(count), ratings(score), profiles(username)"
     )
     .eq("visibility", "public")
+    .is("parent_deck_id", null)
     .order("created_at", { ascending: false });
 
   if (error || !data) {
@@ -46,6 +47,10 @@ export default async function BrowsePage({
   const q = (searchParams.q ?? "").trim().toLowerCase();
   const activeTag = searchParams.tag ?? "";
 
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData.user;
+
   const realDecks = await getRealDecks();
 
   const sampleAsSummaries: DeckSummary[] = sampleDecks.map((d) => ({
@@ -60,7 +65,37 @@ export default async function BrowsePage({
   }));
 
   const allDecks = [...realDecks, ...sampleAsSummaries];
-  const allTags = Array.from(new Set(allDecks.flatMap((d) => d.tags))).sort();
+  const allTagsSet = new Set(allDecks.flatMap((d) => d.tags));
+  const allTagsAlphabetical = Array.from(allTagsSet).sort();
+
+  // Log this as tag activity if it's a real tag match, so the pills can
+  // reorder toward what this person actually uses over time.
+  if (user) {
+    const tagToLog = activeTag || (allTagsSet.has(q) ? q : "");
+    if (tagToLog) {
+      await supabase.from("tag_activity").insert({ user_id: user.id, tag: tagToLog });
+    }
+  }
+
+  let orderedTags = allTagsAlphabetical;
+  if (user) {
+    const { data: recentActivity } = await supabase
+      .from("tag_activity")
+      .select("tag")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    const recentUnique: string[] = [];
+    for (const row of recentActivity ?? []) {
+      if (allTagsSet.has(row.tag) && !recentUnique.includes(row.tag)) {
+        recentUnique.push(row.tag);
+      }
+    }
+
+    const remaining = allTagsAlphabetical.filter((t) => !recentUnique.includes(t));
+    orderedTags = [...recentUnique, ...remaining];
+  }
 
   const filteredDecks = allDecks.filter((deck) => {
     const matchesTag = activeTag ? deck.tags.includes(activeTag) : true;
@@ -125,7 +160,7 @@ export default async function BrowsePage({
         >
           All decks
         </Link>
-        {allTags.map((tag) => (
+        {orderedTags.map((tag) => (
           <Link
             key={tag}
             href={tagHref(tag)}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Mono, Inter } from "next/font/google";
 import Navbar from "@/components/Navbar";
+import { AuthProvider } from "@/components/AuthProvider";
 import "./globals.css";
 
 const spaceMono = Space_Mono({
@@ -27,8 +28,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${spaceMono.variable} ${inter.variable} font-body`}>
-        <Navbar />
-        <main className="max-w-6xl mx-auto px-6 pb-24">{children}</main>
+        <AuthProvider>
+          <Navbar />
+          <main className="max-w-6xl mx-auto px-6 pb-24">{children}</main>
+        </AuthProvider>
       </body>
     </html>
   );
