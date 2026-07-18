@@ -56,7 +56,7 @@ async function getRealDeck(id: string): Promise<ViewDeck | null> {
     id: deck.id,
     title: deck.title,
     description: deck.description ?? "",
-    author: (deck as any).profiles?.username ?? "a deckbox user",
+    author: (deck as any).profiles?.username ?? "a name-placeholder user",
     tags: deck.tags ?? [],
     rating: avgRating,
     ratingCount: scores.length,
@@ -70,7 +70,7 @@ async function getRealDeck(id: string): Promise<ViewDeck | null> {
     })),
     comments: sortedComments.map((c: any) => ({
       id: c.id,
-      author: c.profiles?.username ?? "a deckbox user",
+      author: c.profiles?.username ?? "a name-placeholder user",
       body: c.body,
       userId: c.user_id ?? null,
     })),

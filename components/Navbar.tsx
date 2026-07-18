@@ -15,7 +15,7 @@ export default async function Navbar() {
           href="/"
           className="font-display font-bold text-lg tracking-tight text-ink focus-ring"
         >
-          deck<span className="text-margin">box</span>
+          Name-<span className="text-margin">Placeholder</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-8 text-sm text-muted">
@@ -25,6 +25,11 @@ export default async function Navbar() {
           <Link href="/create" className="hover:text-ink transition-colors focus-ring">
             New deck
           </Link>
+         {user && (
+            <Link href="/my-decks" className="hover:text-ink transition-colors focus-ring">
+              My Decks
+            </Link>
+          )}
           {user && (
             <Link href="/saved" className="hover:text-ink transition-colors focus-ring">
               Saved

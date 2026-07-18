@@ -70,7 +70,7 @@ export default function LoginPage() {
   return (
     <div className="pt-16 max-w-md">
       <p className="font-display text-xs text-margin uppercase tracking-widest mb-3">
-        {mode === "login" ? "welcome back" : "join deckbox"}
+        {mode === "login" ? "welcome back" : "join name-placeholder"}
       </p>
       <h1 className="font-display font-bold text-ink text-2xl md:text-3xl mb-8">
         {mode === "login" ? "Log in" : "Create an account"}
@@ -114,10 +114,10 @@ export default function LoginPage() {
           <input
             type="password"
             required
-            minLength={6}
+            minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="At least 6 characters"
+            placeholder="At least 8 characters"
             className="w-full bg-card border-2 border-ink rounded-sm px-4 py-3 text-sm text-ink placeholder:text-muted focus-ring"
           />
         </div>
@@ -138,7 +138,7 @@ export default function LoginPage() {
       </form>
 
       <p className="text-sm text-muted mt-6">
-        {mode === "login" ? "New to Deckbox?" : "Already have an account?"}{" "}
+        {mode === "login" ? "New to Name-Placeholder?" : "Already have an account?"}{" "}
         <button
           onClick={() => {
             setMode(mode === "login" ? "signup" : "login");
