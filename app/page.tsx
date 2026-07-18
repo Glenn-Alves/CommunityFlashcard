@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import DeckCard, { type DeckSummary } from "@/components/DeckCard";
 import { decks as sampleDecks } from "@/lib/mockData";
 import { createClient } from "@/lib/supabase/server";
@@ -47,9 +48,16 @@ export default async function BrowsePage({
   const q = (searchParams.q ?? "").trim().toLowerCase();
   const activeTag = searchParams.tag ?? "";
 
+  const cookieStore = await cookies();
+  let recentDeckTags: string[] = [];
+  try {
+    const raw = cookieStore.get("recentDeckTags")?.value;
+    if (raw) recentDeckTags = JSON.parse(decodeURIComponent(raw));
+  } catch {
+    recentDeckTags = [];
+  }
+
   const supabase = await createClient();
-  const { data: userData } = await supabase.auth.getUser();
-  const user = userData.user;
 
   const realDecks = await getRealDecks();
 
@@ -66,36 +74,10 @@ export default async function BrowsePage({
 
   const allDecks = [...realDecks, ...sampleAsSummaries];
   const allTagsSet = new Set(allDecks.flatMap((d) => d.tags));
-  const allTagsAlphabetical = Array.from(allTagsSet).sort();
 
-  // Log this as tag activity if it's a real tag match, so the pills can
-  // reorder toward what this person actually uses over time.
-  if (user) {
-    const tagToLog = activeTag || (allTagsSet.has(q) ? q : "");
-    if (tagToLog) {
-      await supabase.from("tag_activity").insert({ user_id: user.id, tag: tagToLog });
-    }
-  }
-
-  let orderedTags = allTagsAlphabetical;
-  if (user) {
-    const { data: recentActivity } = await supabase
-      .from("tag_activity")
-      .select("tag")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    const recentUnique: string[] = [];
-    for (const row of recentActivity ?? []) {
-      if (allTagsSet.has(row.tag) && !recentUnique.includes(row.tag)) {
-        recentUnique.push(row.tag);
-      }
-    }
-
-    const remaining = allTagsAlphabetical.filter((t) => !recentUnique.includes(t));
-    orderedTags = [...recentUnique, ...remaining];
-  }
+  // Only show tags that belong to whichever deck was viewed most recently,
+  // and only ones that still actually exist.
+  const visibleTags = recentDeckTags.filter((t) => allTagsSet.has(t));
 
   const filteredDecks = allDecks.filter((deck) => {
     const matchesTag = activeTag ? deck.tags.includes(activeTag) : true;
@@ -148,32 +130,34 @@ export default async function BrowsePage({
         </form>
       </section>
 
-      {/* Tag filter row */}
-      <div className="flex flex-wrap gap-2 mb-8">
-        <Link
-          href={tagHref("")}
-          className={`text-xs rounded-full px-3 py-1.5 focus-ring transition-colors ${
-            !activeTag
-              ? "bg-ink text-paper"
-              : "text-muted border border-ink/15 hover:border-rule hover:text-ink"
-          }`}
-        >
-          All decks
-        </Link>
-        {orderedTags.map((tag) => (
+      {/* Tag filter row - only the last-viewed deck's own tags */}
+      {visibleTags.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-8">
           <Link
-            key={tag}
-            href={tagHref(tag)}
+            href={tagHref("")}
             className={`text-xs rounded-full px-3 py-1.5 focus-ring transition-colors ${
-              activeTag === tag
+              !activeTag
                 ? "bg-ink text-paper"
                 : "text-muted border border-ink/15 hover:border-rule hover:text-ink"
             }`}
           >
-            {tag}
+            All decks
           </Link>
-        ))}
-      </div>
+          {visibleTags.map((tag) => (
+            <Link
+              key={tag}
+              href={tagHref(tag)}
+              className={`text-xs rounded-full px-3 py-1.5 focus-ring transition-colors ${
+                activeTag === tag
+                  ? "bg-ink text-paper"
+                  : "text-muted border border-ink/15 hover:border-rule hover:text-ink"
+              }`}
+            >
+              {tag}
+            </Link>
+          ))}
+        </div>
+      )}
 
       {/* Deck grid */}
       {filteredDecks.length > 0 ? (

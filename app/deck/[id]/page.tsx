@@ -7,6 +7,7 @@ import CommentItem from "@/components/CommentItem";
 import SaveButton from "@/components/SaveButton";
 import CardManager from "@/components/CardManager";
 import DeckHeaderEdit from "@/components/DeckHeaderEdit";
+import MarkDeckViewed from "@/components/MarkDeckViewed";
 import ImportCardsIntoDeck from "@/components/ImportCardsIntoDeck";
 import DeleteDeckButton from "@/components/DeleteDeckButton";
 import SubsectionManager from "@/components/SubsectionManager";
@@ -139,8 +140,9 @@ export default async function DeckDetailPage({
     subsections = childData ?? [];
   }
 
-  return (
+ return (
     <div className="pt-12">
+      <MarkDeckViewed tags={deck.tags} />
       {/* Header */}
       <div className="border-b border-ink/10 pb-8 mb-8">
         {parentDeck && (
