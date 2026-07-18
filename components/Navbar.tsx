@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "./LogoutButton";
+import OnlineCount from "./OnlineCount";
 
 export default async function Navbar() {
   const supabase = await createClient();
@@ -32,6 +33,7 @@ export default async function Navbar() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <OnlineCount />
           {user ? (
             <>
               <span className="text-sm text-muted hidden sm:inline">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
+import OnlineCount from "@/components/OnlineCount";
 import DeckCard, { type DeckSummary } from "@/components/DeckCard";
 import { decks as sampleDecks } from "@/lib/mockData";
 import { createClient } from "@/lib/supabase/server";
@@ -107,10 +108,13 @@ export default async function BrowsePage({
         <h1 className="font-display font-bold text-ink text-3xl md:text-4xl leading-tight max-w-2xl mb-5">
           Find a flashcard deck someone already made for the thing you're studying.
         </h1>
-        <p className="text-muted max-w-xl mb-8">
+      <p className="text-muted max-w-xl mb-3">
           Browse decks other students published, or bring your own from Anki
           and share it back.
         </p>
+        <div className="mb-8">
+          <OnlineCount />
+        </div>
 
         <form className="flex gap-2 max-w-xl" role="search">
           {activeTag && <input type="hidden" name="tag" value={activeTag} />}
