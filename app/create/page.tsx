@@ -5,10 +5,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import ExpandableField from "@/components/ExpandableField";
+import ImageUploadField from "@/components/ImageUploadField";
 import AnkiImportGuide from "@/components/AnkiImportGuide";
 import { useAuth } from "@/components/AuthProvider";
 
-type CardInput = { front: string; back: string };
+type CardInput = {
+  front: string;
+  back: string;
+  frontImage: string | null;
+  backImage: string | null;
+};
 
 export default function CreateDeckPage() {
   const supabase = createClient();
@@ -18,7 +24,9 @@ export default function CreateDeckPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
-  const [cards, setCards] = useState<CardInput[]>([{ front: "", back: "" }]);
+  const [cards, setCards] = useState<CardInput[]>([
+    { front: "", back: "", frontImage: null, backImage: null },
+  ]);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,12 +42,16 @@ export default function CreateDeckPage() {
     setImporting(true);
     setImportError(null);
 
-    const formData = new FormData();
+const formData = new FormData();
     formData.append("file", file);
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
       const res = await fetch("/api/anki/import", {
         method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: formData,
       });
       const data = await res.json();
@@ -51,10 +63,19 @@ export default function CreateDeckPage() {
         return;
       } else {
         setCards(
-          data.cards.map((c: { front: string; back: string }) => ({
-            front: c.front,
-            back: c.back,
-          }))
+          data.cards.map(
+            (c: {
+              front: string;
+              back: string;
+              frontImage?: string | null;
+              backImage?: string | null;
+            }) => ({
+              front: c.front,
+              back: c.back,
+              frontImage: c.frontImage ?? null,
+              backImage: c.backImage ?? null,
+            })
+          )
         );
         if (!title.trim()) {
           setTitle(file.name.replace(/\.apkg$/i, ""));
@@ -68,16 +89,27 @@ export default function CreateDeckPage() {
     e.target.value = "";
   }
 
- 
-
   function updateCard(index: number, field: "front" | "back", value: string) {
     setCards((prev) =>
       prev.map((c, i) => (i === index ? { ...c, [field]: value } : c))
     );
   }
 
+  function updateCardImage(
+    index: number,
+    field: "frontImage" | "backImage",
+    url: string | null
+  ) {
+    setCards((prev) =>
+      prev.map((c, i) => (i === index ? { ...c, [field]: url } : c))
+    );
+  }
+
   function addCard() {
-    setCards((prev) => [...prev, { front: "", back: "" }]);
+    setCards((prev) => [
+      ...prev,
+      { front: "", back: "", frontImage: null, backImage: null },
+    ]);
   }
 
   function removeCard(index: number) {
@@ -110,6 +142,7 @@ export default function CreateDeckPage() {
       .map((t) => t.trim())
       .filter(Boolean);
 
+    // 1. Insert the deck
     const { data: deck, error: deckError } = await supabase
       .from("decks")
       .insert({
@@ -128,11 +161,14 @@ export default function CreateDeckPage() {
       return;
     }
 
+    // 2. Insert the cards, linked to that deck
     const { error: cardsError } = await supabase.from("cards").insert(
       validCards.map((c) => ({
         deck_id: deck.id,
         front_text: c.front.trim(),
         back_text: c.back.trim(),
+        front_image_url: c.frontImage,
+        back_image_url: c.backImage,
       }))
     );
 
@@ -185,7 +221,9 @@ export default function CreateDeckPage() {
           Deck saved
         </h1>
         <p className="text-muted text-sm mb-2">
-          Your deck is now stored in the database.
+          Your deck is now stored in the database. The browse page still
+          shows sample decks for now — that's the next thing to wire up so
+          real decks show there too.
         </p>
         <p className="text-xs text-muted mb-6">
           Deck ID: <code className="text-ink">{publishedDeckId}</code>
@@ -196,7 +234,7 @@ export default function CreateDeckPage() {
             setTitle("");
             setDescription("");
             setTags("");
-            setCards([{ front: "", back: "" }]);
+            setCards([{ front: "", back: "", frontImage: null, backImage: null }]);
           }}
           className="text-sm text-rule hover:text-ink transition-colors focus-ring"
         >
@@ -208,6 +246,7 @@ export default function CreateDeckPage() {
 
   return (
     <div className="pt-12 max-w-2xl">
+      
       <p className="font-display text-xs text-margin uppercase tracking-widest mb-3">
         new deck
       </p>
@@ -264,6 +303,9 @@ export default function CreateDeckPage() {
             the cards below to review before publishing. A deck with
             subsections gets created and organized automatically.
           </p>
+          <div className="text-left mb-4">
+            <AnkiImportGuide />
+          </div>
           <input
             type="file"
             accept=".apkg"
@@ -289,20 +331,34 @@ export default function CreateDeckPage() {
                 key={i}
                 className="bg-card border border-ink/10 rounded-sm p-4 grid grid-cols-1 md:grid-cols-2 gap-4 relative"
               >
-                <ExpandableField
-                  label="Front"
-                  value={card.front}
-                  onChange={(v) => updateCard(i, "front", v)}
-                  placeholder="Front"
-                  compact
-                />
-                <ExpandableField
-                  label="Back"
-                  value={card.back}
-                  onChange={(v) => updateCard(i, "back", v)}
-                  placeholder="Back"
-                  compact
-                />
+                <div>
+                  <ExpandableField
+                    label="Front"
+                    value={card.front}
+                    onChange={(v) => updateCard(i, "front", v)}
+                    placeholder="Front"
+                    compact
+                  />
+                  <ImageUploadField
+                    label="Front"
+                    value={card.frontImage}
+                    onChange={(url) => updateCardImage(i, "frontImage", url)}
+                  />
+                </div>
+                <div>
+                  <ExpandableField
+                    label="Back"
+                    value={card.back}
+                    onChange={(v) => updateCard(i, "back", v)}
+                    placeholder="Back"
+                    compact
+                  />
+                  <ImageUploadField
+                    label="Back"
+                    value={card.backImage}
+                    onChange={(url) => updateCardImage(i, "backImage", url)}
+                  />
+                </div>
                 {cards.length > 1 && (
                   <button
                     type="button"

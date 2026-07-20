@@ -1,7 +1,13 @@
 import { decks as sampleDecks } from "@/lib/mockData";
 import { createClient } from "@/lib/supabase/server";
 
-export type StudyCard = { id: string; front: string; back: string };
+export type StudyCard = {
+  id: string;
+  front: string;
+  back: string;
+  frontImage: string | null;
+  backImage: string | null;
+};
 
 export async function getDeckForStudy(
   id: string
@@ -10,7 +16,13 @@ export async function getDeckForStudy(
   if (sample) {
     return {
       title: sample.title,
-      cards: sample.cards.map((c) => ({ id: c.id, front: c.front, back: c.back })),
+      cards: sample.cards.map((c) => ({
+        id: c.id,
+        front: c.front,
+        back: c.back,
+        frontImage: null,
+        backImage: null,
+      })),
       tags: sample.tags,
     };
   }
@@ -44,7 +56,7 @@ export async function getDeckForStudy(
 
   const { data: cardsData } = await supabase
     .from("cards")
-    .select("id, front_text, back_text")
+    .select("id, front_text, back_text, front_image_url, back_image_url")
     .in("deck_id", allDeckIds);
 
   return {
@@ -53,6 +65,8 @@ export async function getDeckForStudy(
       id: c.id,
       front: c.front_text,
       back: c.back_text,
+      frontImage: c.front_image_url ?? null,
+      backImage: c.back_image_url ?? null,
     })),
     tags: rootDeck.tags ?? [],
   };

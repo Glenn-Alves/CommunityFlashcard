@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Mono, Inter } from "next/font/google";
 import Navbar from "@/components/Navbar";
+import MobileTabBar from "@/components/MobileTabBar";
 import { AuthProvider } from "@/components/AuthProvider";
 import "./globals.css";
 
@@ -30,7 +31,8 @@ export default function RootLayout({
       <body className={`${spaceMono.variable} ${inter.variable} font-body`}>
         <AuthProvider>
           <Navbar />
-          <main className="max-w-6xl mx-auto px-6 pb-24">{children}</main>
+          <main className="max-w-6xl mx-auto px-6 pb-24 md:pb-24">{children}</main>
+          <MobileTabBar />
         </AuthProvider>
       </body>
     </html>

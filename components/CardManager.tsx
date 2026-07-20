@@ -4,11 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import ExpandableField from "./ExpandableField";
+import ImageUploadField from "./ImageUploadField";
 
 type Row = {
-  id: string | null;
+  id: string | null; // null = not yet saved
   front: string;
   back: string;
+  frontImage: string | null;
+  backImage: string | null;
   saving: boolean;
   error: string | null;
 };
@@ -18,7 +21,13 @@ export default function CardManager({
   initialCards,
 }: {
   deckId: string;
-  initialCards: { id: string; front: string; back: string }[];
+  initialCards: {
+    id: string;
+    front: string;
+    back: string;
+    frontImage: string | null;
+    backImage: string | null;
+  }[];
 }) {
   const supabase = createClient();
   const router = useRouter();
@@ -28,6 +37,8 @@ export default function CardManager({
       id: c.id,
       front: c.front,
       back: c.back,
+      frontImage: c.frontImage,
+      backImage: c.backImage,
       saving: false,
       error: null,
     }))
@@ -39,10 +50,28 @@ export default function CardManager({
     );
   }
 
+  function updateRowImage(
+    index: number,
+    field: "frontImage" | "backImage",
+    url: string | null
+  ) {
+    setRows((prev) =>
+      prev.map((r, i) => (i === index ? { ...r, [field]: url } : r))
+    );
+  }
+
   function addRow() {
     setRows((prev) => [
       ...prev,
-      { id: null, front: "", back: "", saving: false, error: null },
+      {
+        id: null,
+        front: "",
+        back: "",
+        frontImage: null,
+        backImage: null,
+        saving: false,
+        error: null,
+      },
     ]);
   }
 
@@ -64,7 +93,12 @@ export default function CardManager({
     if (row.id) {
       const { error } = await supabase
         .from("cards")
-        .update({ front_text: row.front.trim(), back_text: row.back.trim() })
+        .update({
+          front_text: row.front.trim(),
+          back_text: row.back.trim(),
+          front_image_url: row.frontImage,
+          back_image_url: row.backImage,
+        })
         .eq("id", row.id);
 
       setRows((prev) =>
@@ -79,6 +113,8 @@ export default function CardManager({
           deck_id: deckId,
           front_text: row.front.trim(),
           back_text: row.back.trim(),
+          front_image_url: row.frontImage,
+          back_image_url: row.backImage,
         })
         .select()
         .single();
@@ -114,20 +150,34 @@ export default function CardManager({
           key={row.id ?? `new-${i}`}
           className="bg-card border border-ink/10 rounded-sm p-4 grid grid-cols-1 md:grid-cols-2 gap-4 relative"
         >
-          <ExpandableField
-            label="Front"
-            value={row.front}
-            onChange={(v) => updateRow(i, "front", v)}
-            placeholder="Front"
-            compact
-          />
-          <ExpandableField
-            label="Back"
-            value={row.back}
-            onChange={(v) => updateRow(i, "back", v)}
-            placeholder="Back"
-            compact
-          />
+          <div>
+            <ExpandableField
+              label="Front"
+              value={row.front}
+              onChange={(v) => updateRow(i, "front", v)}
+              placeholder="Front"
+              compact
+            />
+            <ImageUploadField
+              label="Front"
+              value={row.frontImage}
+              onChange={(url) => updateRowImage(i, "frontImage", url)}
+            />
+          </div>
+          <div>
+            <ExpandableField
+              label="Back"
+              value={row.back}
+              onChange={(v) => updateRow(i, "back", v)}
+              placeholder="Back"
+              compact
+            />
+            <ImageUploadField
+              label="Back"
+              value={row.backImage}
+              onChange={(url) => updateRowImage(i, "backImage", url)}
+            />
+          </div>
 
           {row.error && (
             <p className="md:col-span-2 text-xs text-margin">{row.error}</p>

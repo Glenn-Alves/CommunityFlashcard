@@ -34,11 +34,12 @@ export default function LoginPage() {
       router.push("/");
       router.refresh();
     } else {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: { username },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
       setLoading(false);
@@ -46,11 +47,20 @@ export default function LoginPage() {
         setError(error.message);
         return;
       }
+
+      // Supabase returns a "fake" success response for emails that already
+      // exist, rather than an error, to avoid revealing who's registered.
+      // An empty identities array is the signal that this is a duplicate.
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        setError("An account with this email already exists. Try logging in instead.");
+        return;
+      }
+
       setCheckEmail(true);
     }
   }
 
-  if (checkEmail) {
+if (checkEmail) {
     return (
       <div className="pt-16 max-w-md">
         <p className="font-display text-xs text-margin uppercase tracking-widest mb-3">
@@ -59,10 +69,19 @@ export default function LoginPage() {
         <h1 className="font-display font-bold text-ink text-2xl mb-4">
           Check your inbox
         </h1>
-        <p className="text-muted text-sm">
+        <p className="text-muted text-sm mb-6">
           We sent a confirmation link to <strong className="text-ink">{email}</strong>.
           Click it to activate your account, then come back and log in.
         </p>
+        <button
+          onClick={() => {
+            setCheckEmail(false);
+            setMode("login");
+          }}
+          className="text-sm text-rule hover:text-ink transition-colors focus-ring"
+        >
+          ← Back to login
+        </button>
       </div>
     );
   }
@@ -87,7 +106,7 @@ export default function LoginPage() {
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder=""
+              placeholder="Earl"
               className="w-full bg-card border-2 border-ink rounded-sm px-4 py-3 text-sm text-ink placeholder:text-muted focus-ring"
             />
           </div>
@@ -114,7 +133,7 @@ export default function LoginPage() {
           <input
             type="password"
             required
-            minLength={8}
+            minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="At least 8 characters"

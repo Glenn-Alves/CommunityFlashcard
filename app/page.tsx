@@ -4,6 +4,7 @@ import OnlineCount from "@/components/OnlineCount";
 import DeckCard, { type DeckSummary } from "@/components/DeckCard";
 import { decks as sampleDecks } from "@/lib/mockData";
 import { createClient } from "@/lib/supabase/server";
+import { Analytics } from "@vercel/analytics/next"
 
 async function getRealDecks(): Promise<DeckSummary[]> {
   const supabase = await createClient();

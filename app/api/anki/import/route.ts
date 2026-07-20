@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import JSZip from "jszip";
 import initSqlJs from "sql.js";
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 
@@ -9,13 +9,81 @@ function stripHtml(input: string): string {
   return input.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
 }
 
+function guessContentType(ext: string): string {
+  const e = ext.toLowerCase();
+  if (e === "png") return "image/png";
+  if (e === "gif") return "image/gif";
+  if (e === "webp") return "image/webp";
+  if (e === "svg") return "image/svg+xml";
+  return "image/jpeg";
+}
+
+async function extractField(
+  html: string,
+  zip: JSZip,
+  filenameToIndex: Map<string, string>,
+  supabase: any,
+  userId: string
+): Promise<{ text: string; imageUrl: string | null }> {
+  const match = html.match(/<img[^>]*\ssrc=["']([^"']+)["'][^>]*>/i);
+  let imageUrl: string | null = null;
+
+  if (match) {
+    let filename = match[1];
+    let index = filenameToIndex.get(filename);
+    if (index === undefined) {
+      try {
+        filename = decodeURIComponent(filename);
+        index = filenameToIndex.get(filename);
+      } catch {
+        // leave imageUrl null if decoding fails
+      }
+    }
+
+    if (index !== undefined) {
+      const mediaEntry = zip.file(index);
+      if (mediaEntry) {
+        const bytes = await mediaEntry.async("uint8array");
+        const ext = (filename.split(".").pop() || "jpg").toLowerCase();
+        const path = `${userId}/${crypto.randomUUID()}.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("card-images")
+          .upload(path, bytes, { contentType: guessContentType(ext) });
+
+        if (!uploadError) {
+          const { data } = supabase.storage.from("card-images").getPublicUrl(path);
+          imageUrl = data.publicUrl;
+        }
+      }
+    }
+  }
+
+  return { text: stripHtml(html), imageUrl };
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: userData } = await supabase.auth.getUser();
+    const authHeader = request.headers.get("authorization");
+    const token = authHeader?.replace(/^Bearer\s+/i, "");
+
+    if (!token) {
+      return NextResponse.json(
+        { error: "You need to be logged in to import a deck." },
+        { status: 401 }
+      );
+    }
+
+    const supabase = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    );
+
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
     const user = userData.user;
 
-    if (!user) {
+    if (userError || !user) {
       return NextResponse.json(
         { error: "You need to be logged in to import a deck." },
         { status: 401 }
@@ -66,24 +134,66 @@ export async function POST(request: NextRequest) {
       ? JSON.parse(String(decksJson))
       : {};
 
+    // Read the media manifest: maps numeric index -> original filename
+    const mediaEntry = zip.file("media");
+    const mediaMap: Record<string, string> = mediaEntry
+      ? JSON.parse(await mediaEntry.async("text"))
+      : {};
+    const filenameToIndex = new Map(
+      Object.entries(mediaMap).map(([idx, name]) => [name, idx])
+    );
+
     // Read every card, joined to its note text and which Anki deck it's in
     const cardsResult = db.exec(
       "SELECT cards.did as did, notes.flds as flds FROM cards JOIN notes ON cards.nid = notes.id"
     );
 
-    const cardsByAnkiDeck = new Map<string, { front: string; back: string }[]>();
+    type ImportedCard = {
+      front: string;
+      back: string;
+      frontImage: string | null;
+      backImage: string | null;
+    };
+
+    const cardsByAnkiDeck = new Map<string, ImportedCard[]>();
 
     if (cardsResult.length > 0) {
       for (const row of cardsResult[0].values) {
         const did = String(row[0]);
         const flds = String(row[1]);
         const fields = flds.split("\x1f");
-        const front = stripHtml(fields[0] ?? "");
-        const back = stripHtml(fields[1] ?? "");
-        if (!front && !back) continue;
+
+        const frontResult = await extractField(
+          fields[0] ?? "",
+          zip,
+          filenameToIndex,
+          supabase,
+          user.id
+        );
+        const backResult = await extractField(
+          fields[1] ?? "",
+          zip,
+          filenameToIndex,
+          supabase,
+          user.id
+        );
+
+        if (
+          !frontResult.text &&
+          !backResult.text &&
+          !frontResult.imageUrl &&
+          !backResult.imageUrl
+        ) {
+          continue;
+        }
 
         if (!cardsByAnkiDeck.has(did)) cardsByAnkiDeck.set(did, []);
-        cardsByAnkiDeck.get(did)!.push({ front, back });
+        cardsByAnkiDeck.get(did)!.push({
+          front: frontResult.text,
+          back: backResult.text,
+          frontImage: frontResult.imageUrl,
+          backImage: backResult.imageUrl,
+        });
       }
     }
 
@@ -192,12 +302,15 @@ export async function POST(request: NextRequest) {
           deck_id: ourDeckId,
           front_text: c.front,
           back_text: c.back,
+          front_image_url: c.frontImage,
+          back_image_url: c.backImage,
         }))
       );
     }
 
     return NextResponse.json({ mode: "created", rootDeckId });
   } catch (err: any) {
+    console.error("Anki import failed:", err);
     return NextResponse.json(
       { error: err?.message ?? "Could not read that file." },
       { status: 500 }

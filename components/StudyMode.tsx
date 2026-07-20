@@ -126,14 +126,28 @@ export default function StudyMode({
           style={{ transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
         >
           {/* Front */}
-          <div className="absolute inset-0 bg-card border-2 border-ink rounded-lg shadow-sm p-10 flex items-center justify-center [backface-visibility:hidden]">
+          <div className="absolute inset-0 bg-card border-2 border-ink rounded-lg shadow-sm p-10 flex flex-col items-center justify-center gap-4 overflow-y-auto [backface-visibility:hidden]">
+            {current.frontImage && (
+              <img
+                src={current.frontImage}
+                alt="Front"
+                className="max-h-40 rounded-sm"
+              />
+            )}
             <p className="text-xl text-ink font-medium text-center leading-relaxed">{current.front}</p>
           </div>
           {/* Back */}
           <div
-            className="absolute inset-0 bg-card border-2 border-rule rounded-lg shadow-sm p-10 flex items-center justify-center [backface-visibility:hidden]"
+            className="absolute inset-0 bg-card border-2 border-rule rounded-lg shadow-sm p-10 flex flex-col items-center justify-center gap-4 overflow-y-auto [backface-visibility:hidden]"
             style={{ transform: "rotateY(180deg)" }}
           >
+            {current.backImage && (
+              <img
+                src={current.backImage}
+                alt="Back"
+                className="max-h-40 rounded-sm"
+              />
+            )}
             <p className="text-xl text-muted text-center leading-relaxed">{current.back}</p>
           </div>
         </div>
@@ -144,7 +158,7 @@ export default function StudyMode({
       ) : (
         <div>
           <p className="text-xs text-muted text-center mb-3">How well did you know it?</p>
-<div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <button
               onClick={() => handleDifficulty("try")}
               className="bg-margin text-paper px-4 py-3 rounded-sm text-sm font-medium hover:opacity-90 transition-opacity focus-ring"

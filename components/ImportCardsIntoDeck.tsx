@@ -36,7 +36,12 @@ export default function ImportCardsIntoDeck({ deckId }: { deckId: string }) {
           "This file has subdecks of its own. Export just this single subdeck from Anki (select only this one in the dropdown) and try again."
         );
       } else {
-        const cards = data.cards as { front: string; back: string }[];
+        const cards = data.cards as {
+          front: string;
+          back: string;
+          frontImage?: string | null;
+          backImage?: string | null;
+        }[];
         if (cards.length === 0) {
           setError("No cards were found in that file.");
         } else {
@@ -45,6 +50,8 @@ export default function ImportCardsIntoDeck({ deckId }: { deckId: string }) {
               deck_id: deckId,
               front_text: c.front,
               back_text: c.back,
+              front_image_url: c.frontImage ?? null,
+              back_image_url: c.backImage ?? null,
             }))
           );
           if (insertError) {

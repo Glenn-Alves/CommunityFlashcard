@@ -7,10 +7,10 @@ import CommentItem from "@/components/CommentItem";
 import SaveButton from "@/components/SaveButton";
 import CardManager from "@/components/CardManager";
 import DeckHeaderEdit from "@/components/DeckHeaderEdit";
-import MarkDeckViewed from "@/components/MarkDeckViewed";
-import ImportCardsIntoDeck from "@/components/ImportCardsIntoDeck";
-import DeleteDeckButton from "@/components/DeleteDeckButton";
 import SubsectionManager from "@/components/SubsectionManager";
+import DeleteDeckButton from "@/components/DeleteDeckButton";
+import ImportCardsIntoDeck from "@/components/ImportCardsIntoDeck";
+import MarkDeckViewed from "@/components/MarkDeckViewed";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 
@@ -25,7 +25,13 @@ type ViewDeck = {
   cardCount: number;
   ownerId: string | null;
   parentDeckId: string | null;
-  cards: { id: string; front: string; back: string }[];
+  cards: {
+    id: string;
+    front: string;
+    back: string;
+    frontImage: string | null;
+    backImage: string | null;
+  }[];
   comments: { id: string; author: string; body: string; userId: string | null }[];
 };
 
@@ -35,7 +41,7 @@ async function getRealDeck(id: string): Promise<ViewDeck | null> {
   const { data: deck, error } = await supabase
     .from("decks")
     .select(
-      "id, title, description, tags, owner_id, parent_deck_id, profiles(username), cards(id, front_text, back_text), ratings(score), comments(id, body, created_at, user_id, profiles(username))"
+      "id, title, description, tags, owner_id, parent_deck_id, profiles(username), cards(id, front_text, back_text, front_image_url, back_image_url), ratings(score), comments(id, body, created_at, user_id, profiles(username))"
     )
     .eq("id", id)
     .single();
@@ -67,6 +73,8 @@ async function getRealDeck(id: string): Promise<ViewDeck | null> {
       id: c.id,
       front: c.front_text,
       back: c.back_text,
+      frontImage: c.front_image_url ?? null,
+      backImage: c.back_image_url ?? null,
     })),
     comments: sortedComments.map((c: any) => ({
       id: c.id,
@@ -105,6 +113,8 @@ export default async function DeckDetailPage({
           id: c.id,
           front: c.front,
           back: c.back,
+          frontImage: null,
+          backImage: null,
         })),
         comments: sample.comments.map((c) => ({
           id: c.id,
@@ -140,7 +150,7 @@ export default async function DeckDetailPage({
     subsections = childData ?? [];
   }
 
- return (
+  return (
     <div className="pt-12">
       <MarkDeckViewed tags={deck.tags} />
       {/* Header */}
@@ -185,14 +195,14 @@ export default async function DeckDetailPage({
             Study this deck
           </Link>
           {!isSample && (
-            <a 
+            <a
               href={`/api/anki/export/${deck.id}`}
               className="border border-ink/20 text-ink px-5 py-2.5 rounded-sm text-sm font-medium hover:border-ink transition-colors focus-ring"
             >
               Export to Anki
             </a>
           )}
-         {!isSample && <SaveButton deckId={deck.id} />}
+          {!isSample && <SaveButton deckId={deck.id} />}
           {isOwner && (
             <DeleteDeckButton
               deckId={deck.id}
@@ -227,8 +237,26 @@ export default async function DeckDetailPage({
                 key={card.id}
                 className="ruled margin-rule bg-card border border-ink/10 rounded-sm p-4 pl-11 grid grid-cols-1 md:grid-cols-2 gap-4"
               >
-                <p className="text-sm text-ink font-medium">{card.front}</p>
-                <p className="text-sm text-muted">{card.back}</p>
+                <div>
+                  <p className="text-sm text-ink font-medium">{card.front}</p>
+                  {card.frontImage && (
+                    <img
+                      src={card.frontImage}
+                      alt="Front"
+                      className="max-h-32 mt-2 rounded-sm border border-ink/10"
+                    />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm text-muted">{card.back}</p>
+                  {card.backImage && (
+                    <img
+                      src={card.backImage}
+                      alt="Back"
+                      className="max-h-32 mt-2 rounded-sm border border-ink/10"
+                    />
+                  )}
+                </div>
               </div>
             ))}
           </div>
