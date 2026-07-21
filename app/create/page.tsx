@@ -263,7 +263,7 @@ const formData = new FormData();
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="AP Biology — Cellular Respiration"
+            placeholder="The Count of Monte Cristo"
             className="w-full bg-card border-2 border-ink rounded-sm px-4 py-3 text-sm text-ink placeholder:text-muted focus-ring"
           />
         </div>
@@ -288,7 +288,7 @@ const formData = new FormData();
             type="text"
             value={tags}
             onChange={(e) => setTags(e.target.value)}
-            placeholder="biology, ap-bio, exam-prep"
+            placeholder="historical, classic, literature"
             className="w-full bg-card border-2 border-ink rounded-sm px-4 py-3 text-sm text-ink placeholder:text-muted focus-ring"
           />
           <p className="text-xs text-muted mt-1.5">Separate tags with commas.</p>

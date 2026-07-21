@@ -23,7 +23,7 @@ export default function AnkiImportGuide() {
             <li>
               In the deck list, click the deck you want to export. If it has
               subdecks (like chapters or sections) and you want all of them,
-              pick the <strong className="text-ink">top-level</strong> one —
+              pick the <strong className="text-ink">top-level</strong> one:
               exporting a subdeck only brings that one piece, not its
               siblings or parent.
             </li>
@@ -39,7 +39,7 @@ export default function AnkiImportGuide() {
               <strong className="text-ink">
                 "Support older Anki versions"
               </strong>
-              . This is the important one — without it, the file uses a
+              . This is the <b>important</b> one! Without it, the file uses a
               format we can't read yet, and you'll get an error when
               importing.
             </li>
@@ -51,8 +51,7 @@ export default function AnkiImportGuide() {
             organized automatically, and takes you straight to it.
           </p>
           <p>
-            Only the front and back text of each card comes across — images,
-            audio, and formatting aren't supported yet.
+            Card images come through automatically. Audio isn't supported yet.
           </p>
         </div>
       )}

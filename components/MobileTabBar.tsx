@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 
-function TabIcon({ name }: { name: "browse" | "create" | "decks" | "saved" }) {
+function TabIcon({ name }: { name: "browse" | "create" | "decks" | "saved" | "profile" }) {
   const common = {
     width: 20,
     height: 20,
@@ -39,9 +39,17 @@ function TabIcon({ name }: { name: "browse" | "create" | "decks" | "saved" }) {
       </svg>
     );
   }
+ if (name === "saved") {
+    return (
+      <svg {...common}>
+        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+      </svg>
+    );
+  }
   return (
     <svg {...common}>
-      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
     </svg>
   );
 }
@@ -57,6 +65,7 @@ export default function MobileTabBar() {
       ? [
           { href: "/my-decks", label: "My Decks", icon: "decks" as const },
           { href: "/saved", label: "Saved", icon: "saved" as const },
+          { href: "/profile", label: "Profile", icon: "profile" as const },
         ]
       : []),
   ];

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import LogoutButton from "./LogoutButton";
 import OnlineCount from "./OnlineCount";
 
 export default async function Navbar() {
@@ -39,13 +38,13 @@ export default async function Navbar() {
 
         <div className="flex items-center gap-3">
           <OnlineCount />
-          {user ? (
-            <>
-              <span className="text-sm text-muted hidden sm:inline">
-                {user.user_metadata?.username ?? user.email}
-              </span>
-              <LogoutButton />
-            </>
+        {user ? (
+            <Link
+              href="/profile"
+              className="text-sm text-muted hover:text-ink transition-colors focus-ring hidden sm:inline"
+            >
+              {user.user_metadata?.username ?? user.email}
+            </Link>
           ) : (
             <Link
               href="/login"
