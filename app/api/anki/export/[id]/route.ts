@@ -35,6 +35,9 @@ export async function GET(
   }
 
   const zip = await apkg.save();
+
+  // Best-effort don't fail the export if this doesn't work
+  await supabase.rpc("increment_export_count", { target_deck_id: params.id });
   const buffer = Buffer.from(zip, "binary");
 
   const safeName = (deck.title || "deck").replace(/[^a-z0-9\-_]+/gi, "_");

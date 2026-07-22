@@ -253,6 +253,12 @@ export default function ProfilePage() {
           {deleting ? "Deleting..." : "Delete my account"}
         </button>
       </section>
+
+      <p className="mt-12 text-xs text-muted">
+        <Link href="/privacy" className="hover:text-ink transition-colors focus-ring">
+          Privacy Policy
+        </Link>
+      </p>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -154,6 +155,16 @@ if (checkEmail) {
         >
           {loading ? "Please wait..." : mode === "login" ? "Log in" : "Sign up"}
         </button>
+
+        {mode === "signup" && (
+          <p className="text-xs text-muted text-center">
+            By signing up, you agree to our{" "}
+            <Link href="/privacy" className="text-rule hover:text-ink transition-colors focus-ring">
+              Privacy Policy
+            </Link>
+            .
+          </p>
+        )}
       </form>
 
       <p className="text-sm text-muted mt-6">

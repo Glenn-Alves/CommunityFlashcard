@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
-import OnlineCount from "@/components/OnlineCount";
 import DeckCard, { type DeckSummary } from "@/components/DeckCard";
-import { decks as sampleDecks } from "@/lib/mockData";
+import DeckRow from "@/components/DeckRow";
+import FeaturedCreators from "@/components/FeaturedCreators";
 import { createClient } from "@/lib/supabase/server";
-import { Analytics } from "@vercel/analytics/next"
+import { getDiscoverySections } from "@/lib/getDiscoverySections";
 
 async function getRealDecks(): Promise<DeckSummary[]> {
   const supabase = await createClient();
@@ -49,6 +49,7 @@ export default async function BrowsePage({
 }) {
   const q = (searchParams.q ?? "").trim().toLowerCase();
   const activeTag = searchParams.tag ?? "";
+  const isBrowsing = !q && !activeTag;
 
   const cookieStore = await cookies();
   let recentDeckTags: string[] = [];
@@ -59,26 +60,8 @@ export default async function BrowsePage({
     recentDeckTags = [];
   }
 
-  const supabase = await createClient();
-
-  const realDecks = await getRealDecks();
-
-  const sampleAsSummaries: DeckSummary[] = sampleDecks.map((d) => ({
-    id: d.id,
-    title: d.title,
-    description: d.description,
-    author: d.author,
-    tags: d.tags,
-    rating: d.rating,
-    ratingCount: d.ratingCount,
-    cardCount: d.cardCount,
-  }));
-
-  const allDecks = [...realDecks, ...sampleAsSummaries];
+  const allDecks = await getRealDecks();
   const allTagsSet = new Set(allDecks.flatMap((d) => d.tags));
-
-  // Only show tags that belong to whichever deck was viewed most recently,
-  // and only ones that still actually exist.
   const visibleTags = recentDeckTags.filter((t) => allTagsSet.has(t));
 
   const filteredDecks = allDecks.filter((deck) => {
@@ -90,6 +73,8 @@ export default async function BrowsePage({
       : true;
     return matchesTag && matchesQuery;
   });
+
+  const discovery = isBrowsing ? await getDiscoverySections() : null;
 
   function tagHref(tag: string) {
     const params = new URLSearchParams();
@@ -109,13 +94,10 @@ export default async function BrowsePage({
         <h1 className="font-display font-bold text-ink text-3xl md:text-4xl leading-tight max-w-2xl mb-5">
           Find a flashcard deck someone already made for the thing you're studying.
         </h1>
-      <p className="text-muted max-w-xl mb-3">
+        <p className="text-muted max-w-xl mb-8">
           Browse decks other students published, or bring your own from Anki
           and share it back.
         </p>
-        <div className="mb-8">
-          <OnlineCount />
-        </div>
 
         <form className="flex gap-2 max-w-xl" role="search">
           {activeTag && <input type="hidden" name="tag" value={activeTag} />}
@@ -164,7 +146,41 @@ export default async function BrowsePage({
         </div>
       )}
 
+      {/* Discovery sections - only on the plain landing view */}
+      {discovery && (
+        <>
+          <DeckRow title="Trending" decks={discovery.trending} />
+          <DeckRow title="Recently Published" decks={discovery.recentlyPublished} />
+          <DeckRow title="Most Downloaded" decks={discovery.mostDownloaded} />
+          <FeaturedCreators creators={discovery.featuredCreators} />
+
+          {discovery.popularTags.length > 0 && (
+            <section className="mb-10">
+              <h2 className="font-display font-bold text-ink text-sm uppercase tracking-wide mb-4">
+                Popular Tags
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {discovery.popularTags.map((tag) => (
+                  <Link
+                    key={tag}
+                    href={tagHref(tag)}
+                    className="text-xs text-muted border border-ink/15 rounded-full px-3 py-1.5 hover:border-rule hover:text-ink transition-colors focus-ring"
+                  >
+                    {tag}
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <div className="border-t border-ink/10 mb-10" />
+        </>
+      )}
+
       {/* Deck grid */}
+      <h2 className="font-display font-bold text-ink text-sm uppercase tracking-wide mb-4">
+        {isBrowsing ? "All Decks" : "Results"}
+      </h2>
       {filteredDecks.length > 0 ? (
         <section aria-label="Decks" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredDecks.map((deck) => (
