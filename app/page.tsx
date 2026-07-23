@@ -33,7 +33,7 @@ async function getRealDecks(): Promise<DeckSummary[]> {
       id: row.id,
       title: row.title,
       description: row.description ?? "",
-      author: row.profiles?.username ?? "a name-placeholder user",
+      author: row.profiles?.username ?? "an opendeck user",
       tags: row.tags ?? [],
       rating: avgRating,
       ratingCount: scores.length,

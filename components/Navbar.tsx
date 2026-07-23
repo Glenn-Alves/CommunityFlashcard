@@ -14,7 +14,7 @@ export default async function Navbar() {
           href="/"
           className="font-display font-bold text-lg tracking-tight text-ink focus-ring"
         >
-          Name-<span className="text-margin">Placeholder</span>
+          Open<span className="text-margin">Deck</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-8 text-sm text-muted">

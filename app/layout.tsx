@@ -17,7 +17,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Name-Placeholder — flashcards, shared",
+  title: "OpenDeck - flashcards, shared",
   description: "Publish, discover, and study flashcard decks made by other students.",
 };
 

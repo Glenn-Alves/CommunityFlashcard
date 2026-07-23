@@ -90,7 +90,7 @@ if (checkEmail) {
   return (
     <div className="pt-16 max-w-md">
       <p className="font-display text-xs text-margin uppercase tracking-widest mb-3">
-        {mode === "login" ? "welcome back" : "join name-placeholder"}
+        {mode === "login" ? "welcome back" : "join opendeck"}
       </p>
       <h1 className="font-display font-bold text-ink text-2xl md:text-3xl mb-8">
         {mode === "login" ? "Log in" : "Create an account"}
@@ -168,7 +168,7 @@ if (checkEmail) {
       </form>
 
       <p className="text-sm text-muted mt-6">
-        {mode === "login" ? "New to Name-Placeholder?" : "Already have an account?"}{" "}
+        {mode === "login" ? "New to OpenDeck?" : "Already have an account?"}{" "}
         <button
           onClick={() => {
             setMode(mode === "login" ? "signup" : "login");

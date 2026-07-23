@@ -11,7 +11,7 @@ function toSummary(d: any): DeckSummary {
     id: d.id,
     title: d.title,
     description: d.description ?? "",
-    author: d.profiles?.username ?? "a name-placeholder user",
+   author: d.profiles?.username ?? "an opendeck user",
     tags: d.tags ?? [],
     rating: avgRating,
     ratingCount: scores.length,
