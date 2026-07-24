@@ -7,7 +7,7 @@ function toSummary(d: any): DeckSummary {
     ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length
     : 0;
 
-  return {
+ return {
     id: d.id,
     title: d.title,
     description: d.description ?? "",
@@ -16,11 +16,15 @@ function toSummary(d: any): DeckSummary {
     rating: avgRating,
     ratingCount: scores.length,
     cardCount: d.cards?.[0]?.count ?? 0,
+    difficulty: d.difficulty ?? "Medium",
+    exportCount: d.export_count ?? 0,
+    saveCount: d.save_count ?? 0,
+    updatedAt: d.updated_at ?? d.created_at,
   };
 }
 
 const DECK_FIELDS =
-  "id, title, description, tags, created_at, export_count, cards(count), ratings(score), profiles(username)";
+  "id, title, description, tags, created_at, updated_at, export_count, save_count, difficulty, cards(count), ratings(score), profiles(username)";
 
 export type FeaturedCreator = {
   username: string;

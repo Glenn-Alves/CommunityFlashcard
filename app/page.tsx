@@ -12,7 +12,7 @@ async function getRealDecks(): Promise<DeckSummary[]> {
   const { data, error } = await supabase
     .from("decks")
     .select(
-      "id, title, description, tags, created_at, cards(count), ratings(score), profiles(username)"
+      "id, title, description, tags, created_at, updated_at, export_count, save_count, difficulty, cards(count), ratings(score), profiles(username)"
     )
     .eq("visibility", "public")
     .is("parent_deck_id", null)
@@ -30,15 +30,19 @@ async function getRealDecks(): Promise<DeckSummary[]> {
       : 0;
 
     return {
-      id: row.id,
-      title: row.title,
-      description: row.description ?? "",
-      author: row.profiles?.username ?? "an opendeck user",
-      tags: row.tags ?? [],
-      rating: avgRating,
-      ratingCount: scores.length,
-      cardCount: row.cards?.[0]?.count ?? 0,
-    };
+  id: row.id,
+  title: row.title,
+  description: row.description ?? "",
+  author: row.profiles?.username ?? "an opendeck user",
+  tags: row.tags ?? [],
+  rating: avgRating,
+  ratingCount: scores.length,
+  cardCount: row.cards?.[0]?.count ?? 0,
+  difficulty: row.difficulty ?? "Medium",
+  exportCount: row.export_count ?? 0,
+  saveCount: row.save_count ?? 0,
+  updatedAt: row.updated_at ?? row.created_at,
+};
   });
 }
 

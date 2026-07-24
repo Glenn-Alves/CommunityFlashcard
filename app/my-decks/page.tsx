@@ -29,8 +29,8 @@ export default async function MyDecksPage() {
   const { data, error } = await supabase
     .from("decks")
     .select(
-      "id, title, description, tags, cards(count), ratings(score), profiles(username)"
-    )
+  "id, title, description, tags, updated_at, export_count, save_count, difficulty, cards(count), ratings(score), profiles(username)"
+)
     .eq("owner_id", user.id)
     .is("parent_deck_id", null)
     .order("created_at", { ascending: false });
@@ -41,16 +41,20 @@ export default async function MyDecksPage() {
       ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length
       : 0;
 
-    return {
-      id: d.id,
-      title: d.title,
-      description: d.description ?? "",
-      author: d.profiles?.username ?? "you",
-      tags: d.tags ?? [],
-      rating: avgRating,
-      ratingCount: scores.length,
-      cardCount: d.cards?.[0]?.count ?? 0,
-    };
+   return {
+  id: d.id,
+  title: d.title,
+  description: d.description ?? "",
+  author: d.profiles?.username ?? "you",
+  tags: d.tags ?? [],
+  rating: avgRating,
+  ratingCount: scores.length,
+  cardCount: d.cards?.[0]?.count ?? 0,
+  difficulty: d.difficulty ?? "Medium",
+  exportCount: d.export_count ?? 0,
+  saveCount: d.save_count ?? 0,
+  updatedAt: d.updated_at ?? "",
+};
   });
 
   return (

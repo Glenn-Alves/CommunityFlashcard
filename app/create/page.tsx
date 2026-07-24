@@ -28,6 +28,8 @@ export default function CreateDeckPage() {
     { front: "", back: "", frontImage: null, backImage: null },
   ]);
 
+  const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">("Medium");
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [publishedDeckId, setPublishedDeckId] = useState<string | null>(null);
@@ -150,8 +152,10 @@ const formData = new FormData();
         title: title.trim(),
         description: description.trim(),
         tags: tagList,
+        difficulty,
         visibility: "public",
       })
+      
       .select()
       .single();
 
@@ -229,11 +233,12 @@ const formData = new FormData();
           Deck ID: <code className="text-ink">{publishedDeckId}</code>
         </p>
         <button
-          onClick={() => {
+         onClick={() => {
             setPublishedDeckId(null);
             setTitle("");
             setDescription("");
             setTags("");
+            setDifficulty("Medium");
             setCards([{ front: "", back: "", frontImage: null, backImage: null }]);
           }}
           className="text-sm text-rule hover:text-ink transition-colors focus-ring"
@@ -293,6 +298,28 @@ const formData = new FormData();
           />
           <p className="text-xs text-muted mt-1.5">Separate tags with commas.</p>
         </div>
+
+        <div>
+  <label className="block font-display text-xs text-ink uppercase tracking-wide mb-2">
+    Difficulty
+  </label>
+  <div className="flex gap-2">
+    {(["Easy", "Medium", "Hard"] as const).map((level) => (
+      <button
+        key={level}
+        type="button"
+        onClick={() => setDifficulty(level)}
+        className={`px-4 py-2 rounded-sm text-sm font-medium border-2 transition-colors focus-ring ${
+          difficulty === level
+            ? "bg-ink text-paper border-ink"
+            : "bg-card text-muted border-ink/25 hover:border-ink/50"
+        }`}
+      >
+        {level}
+      </button>
+    ))}
+  </div>
+</div>
 
         <div className="border-2 border-dashed border-ink/25 rounded-sm p-6 text-center">
           <p className="text-sm text-ink font-medium mb-1">

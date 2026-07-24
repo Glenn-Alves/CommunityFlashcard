@@ -29,7 +29,7 @@ export default async function SavedDecksPage() {
   const { data, error } = await supabase
     .from("saved_decks")
     .select(
-      "deck_id, decks(id, title, description, tags, cards(count), ratings(score), profiles(username))"
+      "deck_id, decks(id, title, description, tags, updated_at, export_count, save_count, difficulty, cards(count), ratings(score), profiles(username))"
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
@@ -52,6 +52,10 @@ export default async function SavedDecksPage() {
         rating: avgRating,
         ratingCount: scores.length,
         cardCount: d.cards?.[0]?.count ?? 0,
+        difficulty: d.difficulty ?? "Medium",
+  exportCount: d.export_count ?? 0,
+  saveCount: d.save_count ?? 0,
+  updatedAt: d.updated_at ?? "",
       };
     });
 

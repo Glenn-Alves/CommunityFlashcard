@@ -18,7 +18,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "OpenDeck - flashcards, shared",
-  description: "Publish, discover, and study flashcard decks made by other students.",
+  description: "No Login Required to Borrow Someone Else's Study Notes",
 };
 
 export default function RootLayout({

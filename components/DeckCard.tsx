@@ -1,5 +1,6 @@
 import Link from "next/link";
 import RatingStars from "./RatingStars";
+import { estimateStudyTime } from "@/lib/estimateStudyTime";
 
 export type DeckSummary = {
   id: string;
@@ -10,8 +11,11 @@ export type DeckSummary = {
   rating: number;
   ratingCount: number;
   cardCount: number;
+  difficulty: "Easy" | "Medium" | "Hard";
+  exportCount: number;
+  saveCount: number;
+  updatedAt: string;
 };
-
 export default function DeckCard({ deck }: { deck: DeckSummary }) {
   return (
     <Link
@@ -38,6 +42,24 @@ export default function DeckCard({ deck }: { deck: DeckSummary }) {
               {tag}
             </span>
           ))}
+        </div>
+
+       <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted font-mono mb-3">
+          <span
+            className={`px-2 py-0.5 rounded-full border ${
+              deck.difficulty === "Easy"
+                ? "border-green-600 text-green-700"
+                : deck.difficulty === "Hard"
+                ? "border-margin text-margin"
+                : "border-rule text-rule"
+            }`}
+          >
+            {deck.difficulty}
+          </span>
+          <span>{estimateStudyTime(deck.cardCount)}</span>
+          <span>⬇ {deck.exportCount}</span>
+          <span>★ {deck.saveCount}</span>
+          <span>Updated {new Date(deck.updatedAt).toLocaleDateString()}</span>
         </div>
 
         <RatingStars rating={deck.rating} count={deck.ratingCount} />
